@@ -1,0 +1,70 @@
+body {
+    background-color: #e5f5f5;
+}
+body * {
+    font-family: "Segoe UI", Roboto, "Noto Sans", Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+input {
+    font-size: 1em;
+}
+fieldset {
+    box-shadow: 0 0 10px -7px #4f00ff;
+    border: 1px solid lightblue;
+    margin: 20px;
+    border-radius: 3px;
+    background-color: #cde8e8;
+}
+.error-fieldset {
+    background-color: #ff9c9c;
+}
+
+legend {
+    text-transform: uppercase;
+    line-height: 0.5em;
+}
+small {
+    display: block;
+    padding-bottom: 10px;
+    font-style: italic;
+    color: #aaa;
+}
+[v-cloak]{
+    display: none;
+}
+#app {
+    display: flex;
+    flex-wrap: wrap;
+    margin: auto;
+}
+.app-columns {
+    width: 800px;
+    max-width: 100%;
+}
+input.date-invalid {
+    border: 1px solid red;
+    outline-color: red;
+}
+.red-color {
+    border: 1px solid red;
+    color: red;
+}
+.result-table {
+    border-spacing: 0;
+    border-collapse: collapse;
+}
+.result-table th,
+.result-table td {
+    border: 1px solid black;
+    padding: 5px;
+}
+tr.not-full-month td {
+    background-color: bisque;
+    font-weight: bold;
+}
+@media print
+{
+    .no-print, .no-print *
+    {
+        display: none !important;
+    }
+}
