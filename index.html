@@ -45,7 +45,7 @@
 		<fieldset>
 			<legend>Исключения из периода: <b>отпуск</b></legend>
 			<small>Учитываются праздники при подсчете продолжительности указанного периода</small>
-			<div v-for="(period, idx) in vacationsFilledDaysCount">
+			<div v-for="(period, idx) in enhancedVacations">
 				Начало: <input :value="period.start"
 							   @input="datePlaceholderChangeHandler($event, types.vacation, idx, 'start')"
 							   ref="recentVacationInput"
@@ -75,7 +75,7 @@
 		<fieldset>
 			<legend>Исключения из периода: <b>продление отпуска</b></legend>
 			<small>Учитываются праздники при подсчете продолжительности указанного периода</small>
-			<div v-for="(period, idx) in vacationProlongationsFilledWithSick">
+			<div v-for="(period, idx) in enhancedProlongations">
 				Начало: <input :value="period.start"
 							   @input="datePlaceholderChangeHandler($event, types.vacation_prolongation, idx, 'start')"
 							   ref="vacationProlongationInput"
@@ -185,8 +185,7 @@
 					Средний дневной заработок - <b>{{avgSum.toFixed(2)}}</b> руб.
 				</fieldset>
 				<fieldset>
-					Отработано дней в периоде - <b>{{totalWorkingDays.toFixed(2)}}</b> руб.
-				</fieldset>
+					Отработано дней в периоде - <b>{{totalWorkingDays.toFixed(2)}}</b>
 				<fieldset>
 					Сумма отпускных - {{(avgSum * vacation_length).toFixed(2)}} ({{vacation_length}} &times; {{avgSum}})
 				</fieldset>

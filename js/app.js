@@ -164,7 +164,7 @@ const App = {
 		calcWorkingDaysInPeriod({start}) {
 			let startDate = this.dateCreate(start);
 			let monthYear = startDate.format('MM.YYYY');
-			let notWorkingDays = startDate.date() - startDate.startOf('month').date() + (this.notWorkingDays[monthYear] ?? 0);
+			let notWorkingDays = startDate.date() - 1 + (this.notWorkingDaysCount[monthYear] ?? 0);
 			let workingDays = 29.3 - notWorkingDays * 29.3 / startDate.daysInMonth();
 			return _.max([_.round(workingDays, 2), 0]);
 		},
@@ -174,7 +174,7 @@ const App = {
 				return false;
 			}
 			let monthYear = dateStart.format('MM.YYYY');
-			return this.notWorkingDays[monthYear] === undefined;
+			return (this.notWorkingDaysCount[monthYear] ?? 0) === 0;
 		},
 		calcPeriodCalculation() {
 			if (
@@ -222,7 +222,7 @@ const App = {
 			});
 			return sickPeriods;
 		},
-		modifyPeriodsBySick(periods) {
+		enhancePeriods(periods) {
 			let vacationsWithSick = periods.map(modifyPeriod => {
 				if (!modifyPeriod.start || !modifyPeriod.end
 					|| !this.isValidDate(modifyPeriod.start) || !this.isValidDate(modifyPeriod.end)) {
@@ -249,7 +249,6 @@ const App = {
 				let hasProlongation = this.hasProlongationStartOnDate(prolongationStartDate);
 				let holidaysCount = this.getHolidaysCount(modifyPeriod.start, vacationEnd);
 
-				debugger
 				return {
 					...modifyPeriod,
 					sickPeriods,
@@ -287,6 +286,7 @@ const App = {
 			this.test1();
 			this.test2();
 			this.test3();
+			this.test4();
 			restoreState();
 		},
 		test1() {
@@ -361,6 +361,63 @@ const App = {
 			this.assertEqual(false, this.isValidDate(false), false);
 			this.assertEqual(false, this.isValidDate(0), 0);
 			this.assertEqual(false, this.isValidDate(300), 300);
+		},
+		test4() {
+			this.vacation_start = '19.03.2023';
+			this.vacation_length = '14';
+			this.employmentDate = '01.01.2022';
+			this.calc_period.start = '01.03.2022';
+			this.calc_period.end = '28.02.2023';
+			this.recentVacationsPeriods = [
+				{
+					start: '20.03.2022',
+					end: '02.04.2022'
+				},
+				{
+					start: '24.08.2022',
+					end: '06.09.2022'
+				},
+			];
+			this.vacationProlongationPeriods = [
+				{
+					start: '30.09.2022',
+					end: '06.10.2022'
+				},
+			];
+			this.sickPeriods = [
+				{
+					start: '17.01.2022',
+					end: '23.01.2022'
+				},
+				{
+					start: '23.09.2022',
+					end: '29.09.2022'
+				},
+				{
+					start: '31.08.2022',
+					end: '22.08.2022'
+				},
+				{
+					start: '24.11.2022',
+					end: '27.11.2022'
+				},
+				{
+					start: '28.11.2022',
+					end: '06.12.2022'
+				},
+				{
+					start: '07.12.2022',
+					end: '12.12.2022'
+				},
+			];
+			this.enhancedVacations.forEach(period => {
+				if (period.sickPeriods && period.hasProlongation) {
+					alert(JSON.stringify({
+						period,
+						message: 'В тесте у всех больничных есть продление. Но программа считает иначе',
+					}, null, 2));
+				}
+			});
 		},
 		assertEqual(expected, real, message) {
 			if (expected === real) {
@@ -457,11 +514,11 @@ const App = {
 			}
 			return errors;
 		},
-		vacationsFilledDaysCount() {
-			return this.modifyPeriodsBySick(this.recentVacationsPeriods);
+		enhancedVacations() {
+			return this.enhancePeriods(this.recentVacationsPeriods);
 		},
-		vacationProlongationsFilledWithSick() {
-			return this.modifyPeriodsBySick(this.vacationProlongationPeriods);
+		enhancedProlongations() {
+			return this.enhancePeriods(this.vacationProlongationPeriods);
 		},
 		excludedPeriodsDayjs() {
 			return [];
@@ -542,8 +599,8 @@ const App = {
 		},
 		intersectionErrors() {
 			const periods = [
-				this.vacationProlongationsFilledWithSick,
-				this.vacationsFilledDaysCount,
+				this.enhancedProlongations,
+				this.enhancedVacations,
 				this.leaveOfAbsencePeriods,
 			];
 			const errors = [];
@@ -566,8 +623,8 @@ const App = {
 		splitByMonthPeriods() {
 			let result = [];
 			const allPeriods = [
-				this.vacationProlongationsFilledWithSick,
-				this.vacationsFilledDaysCount,
+				this.enhancedProlongations,
+				this.enhancedVacations,
 				this.sickPeriods,
 				this.leaveOfAbsencePeriods,
 			];
@@ -578,29 +635,32 @@ const App = {
 			});
 			return result;
 		},
-		notWorkingDays() {
-			const splittedSickPeriods = this.splitPeriodsByMonth(this.sickPeriods);
-			const splittedVacationPeriods = this.splitPeriodsByMonth(this.recentVacationsPeriods);
-			const splittedProlongationPeriods = this.splitPeriodsByMonth(this.vacationProlongationPeriods);
-			const splittedLeavePeriods = this.splitPeriodsByMonth(this.leaveOfAbsencePeriods);
-			let result = {};
+		splittedSickPeriods() {
+			return this.splitPeriodsByMonth(this.sickPeriods);
+		},
+		notWorkingDates() {
+			let notWorkingDates = {};
 			this.splitByMonthPeriods.forEach(period => {
 				let { start, end } = period;
 				let startDate = _.max([this.dateCreate(start), this.dateCreate(this.calc_period.start)]);
 				let endDate = _.min([this.dateCreate(end), this.dateCreate(this.calc_period.end)]);
 				let monthYear = this.dateCreate(start).format('MM.YYYY');
-				let periodLength = endDate.diff(startDate, 'd') + 1;
-				if (periodLength < 0) {
-					return;
+				notWorkingDates[monthYear] = notWorkingDates[monthYear] ?? {};
+				while (startDate <= endDate) {
+					notWorkingDates[monthYear][startDate.format(this.date_format)] = 1;
+					startDate = startDate.add(1, 'day');
 				}
-				if (period.length !== undefined) {
-					periodLength = period.length;
-				}
-				result[monthYear] = (result[monthYear] ?? 0) + periodLength;
-			})
+			});
+			return notWorkingDates;
+		},
+		notWorkingDaysCount() {
+			let result = {};
+			Object.entries(this.notWorkingDates).forEach(([monthYear, dates]) => {
+				result[monthYear] = Object.keys(dates).length;
+			});
 			return result;
 		},
-		calcPeriods() {
+		resultMonths() {
 			let startPeriodDate = this.dateCreate(this.calc_period.start);
 			if (this.isValidDate(this.employmentDate)) {
 				startPeriodDate = _.max([startPeriodDate, this.dateCreate(this.employmentDate)]);
@@ -626,7 +686,7 @@ const App = {
 			return result;
 		},
 		totalWorkingDays() {
-			return _.sum(this.calcPeriods.map(period => this.calcWorkingDaysInPeriod(period)));
+			return _.sum(this.resultMonths.map(period => this.calcWorkingDaysInPeriod(period)));
 		},
 		avgSum() {
 			if (this.totalWorkingDays === 0) {
@@ -635,7 +695,7 @@ const App = {
 			return _.round((this.workerSum.toString().replace(',', '.')) / this.totalWorkingDays, 2);
 		},
 		resultTable() {
-				return this.calcPeriods.map(period => ({
+				return this.resultMonths.map(period => ({
 					isFullMonth: this.isFullMonth(period),
 					monthYear: this.dateCreate(period.start).format('MM.YYYY'),
 					workDays: this.calcWorkingDaysInPeriod(period).toFixed(this.isFullMonth(period) ? 1 : 2),
