@@ -1,5 +1,7 @@
 body {
     background-color: #e5f5f5;
+    background: url("../img/bg.jpg") no-repeat fixed;
+    background-size: cover;
 }
 body * {
     font-family: "Segoe UI", Roboto, "Noto Sans", Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
@@ -35,6 +37,7 @@ small {
     display: flex;
     flex-wrap: wrap;
     margin: auto;
+    justify-content: center;
 }
 .app-columns {
     width: 800px;
