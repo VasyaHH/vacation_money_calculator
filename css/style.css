@@ -9,21 +9,22 @@ body * {
 input {
     font-size: 1em;
 }
-fieldset {
+.box-with-header {
+    padding: 5px;
     box-shadow: 0 0 10px -7px #4f00ff;
     border: 1px solid lightblue;
-    margin: 20px;
     border-radius: 3px;
-    background-color: #cde8e8;
+    background-color: #dce7fc;
 }
+.box-header {
+    text-transform: uppercase;
+    line-height: 1em;
+}
+
 .error-fieldset {
     background-color: #ff9c9c;
 }
 
-legend {
-    text-transform: uppercase;
-    line-height: 0.5em;
-}
 small {
     display: block;
     padding-bottom: 10px;
@@ -38,10 +39,16 @@ small {
     flex-wrap: wrap;
     margin: auto;
     justify-content: center;
+    gap: 10px;
 }
 .app-columns {
+    background-color: #fff8;
+    box-shadow: 0 0 9px 9px #fff8;
     width: 800px;
     max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 input.date-invalid {
     border: 1px solid red;

@@ -5,7 +5,7 @@ const App = {
 			vacation_start: '',
 			vacation_length: '',
 			employmentDate: '',
-			calc_period: {
+			calcPeriod: {
 				start: '',
 				end: '',
 			},
@@ -41,6 +41,15 @@ const App = {
 		}
 	},
 	methods: {
+		clearAllExclusions() {
+			this.vacationProlongationPeriods = [];
+			this.recentVacationsPeriods = [];
+			this.sickPeriods = [];
+			this.leaveOfAbsencePeriods = [];
+		},
+		workerSumChangedHandler(e) {
+			this.workerSum = e.target.value.replace(/[\s]/, '');
+		},
 		splitPeriodsByMonth(periods) {
 			let result = [];
 			periods.forEach(period => {
@@ -182,17 +191,17 @@ const App = {
 				|| this.vacation_length <= 0
 				|| !this.isValidDate(this.vacation_start)
 			) {
-				this.calc_period.start = '';
-				this.calc_period.end = '';
+				this.calcPeriod.start = '';
+				this.calcPeriod.end = '';
 				return;
 			}
 			let calcPeriodEnd = this.dateCreate(this.vacation_start).subtract(1, 'month').endOf('month');
 			let calcPeriodStart = calcPeriodEnd.subtract(11, 'month').startOf('month');
-			this.calc_period.end = calcPeriodEnd.format(this.date_format);
-			this.calc_period.start = calcPeriodStart.format(this.date_format);
+			this.calcPeriod.end = calcPeriodEnd.format(this.date_format);
+			this.calcPeriod.start = calcPeriodStart.format(this.date_format);
 			if (this.isValidDate(this.employmentDate)) {
 				let employmentDate = this.dateCreate(this.employmentDate);
-				this.calc_period.start = _.max([calcPeriodStart, employmentDate]).format(this.date_format);
+				this.calcPeriod.start = _.max([calcPeriodStart, employmentDate]).format(this.date_format);
 			}
 		},
 		hasIntersection(period1, period2) {
@@ -293,8 +302,8 @@ const App = {
 			this.vacation_start = '05.03.2023';
 			this.vacation_length = '14';
 			this.employmentDate = '11.02.2020';
-			this.calc_period.start = '01.02.2022';
-			this.calc_period.end = '31.01.2023';
+			this.calcPeriod.start = '01.02.2022';
+			this.calcPeriod.end = '31.01.2023';
 			this.recentVacationsPeriods = [
 				{
 					start: '21.01.2022',
@@ -311,8 +320,8 @@ const App = {
 			this.vacation_start = '15.03.2023';
 			this.vacation_length = '14';
 			this.employmentDate = '01.01.2020';
-			this.calc_period.start = '01.02.2022';
-			this.calc_period.end = '31.01.2023';
+			this.calcPeriod.start = '01.02.2022';
+			this.calcPeriod.end = '31.01.2023';
 			this.recentVacationsPeriods = [
 				{
 					start: '18.04.2022',
@@ -366,8 +375,8 @@ const App = {
 			this.vacation_start = '19.03.2023';
 			this.vacation_length = '14';
 			this.employmentDate = '01.01.2022';
-			this.calc_period.start = '01.03.2022';
-			this.calc_period.end = '28.02.2023';
+			this.calcPeriod.start = '01.03.2022';
+			this.calcPeriod.end = '28.02.2023';
 			this.recentVacationsPeriods = [
 				{
 					start: '20.03.2022',
@@ -434,17 +443,21 @@ const App = {
 			const vacation_length = this.vacation_length;
 			const employmentDate = this.employmentDate;
 			const recentVacationsPeriods = this.recentVacationsPeriods;
+			const vacationProlongationPeriods = this.vacationProlongationPeriods;
 			const sickPeriods = this.sickPeriods;
 			const leaveOfAbsencePeriods = this.leaveOfAbsencePeriods;
-			const calcPeriod = this.calcPeriod;
+			const calcPeriodStart = this.calcPeriod.start;
+			const calcPeriodEnd = this.calcPeriod.end;
 			return () => {
 				this.vacation_start = vacation_start;
 				this.vacation_length = vacation_length;
 				this.employmentDate = employmentDate;
 				this.recentVacationsPeriods = recentVacationsPeriods;
+				this.vacationProlongationPeriods = vacationProlongationPeriods;
 				this.sickPeriods = sickPeriods;
 				this.leaveOfAbsencePeriods = leaveOfAbsencePeriods;
-				this.calcPeriod = calcPeriod;
+				this.calcPeriod.start = calcPeriodStart;
+				this.calcPeriod.end = calcPeriodEnd;
 			}
 		}
 	},
@@ -486,8 +499,8 @@ const App = {
 		// 		type: 'leave_of_absence',
 		// 	},
 		// ];
-		// this.calc_period.start = '01.02.2022';
-		// this.calc_period.end = '31.01.2023';
+		// this.calcPeriod.start = '01.02.2022';
+		// this.calcPeriod.end = '31.01.2023';
 		this.runTests();
 	},
 	watch: {
@@ -542,17 +555,17 @@ const App = {
 				if (end && start && end.diff(start, 'd') < 0) {
 					errors.push('Начало периода больше, чем его окончание');
 				}
-				if (start && start < this.dateCreate(this.calc_period.start)) {
+				if (start && start < this.dateCreate(this.calcPeriod.start)) {
 					errors.push('Начало периода выходит за левую границу расчетного периода');
 				}
-				if (end && end < this.dateCreate(this.calc_period.start)) {
+				if (end && end < this.dateCreate(this.calcPeriod.start)) {
 					errors.push('Начало периода выходит за правую границу расчетного периода');
 				}
 				return errors;
 			})
 		},
 		calcPeriodErrors() {
-			let { start, end } = this.calc_period
+			let { start, end } = this.calcPeriod
 			let errors = [];
 			let startDate = this.dateCreate(start);
 			if (start && !startDate.isValid()) {
@@ -642,8 +655,8 @@ const App = {
 			let notWorkingDates = {};
 			this.splitByMonthPeriods.forEach(period => {
 				let { start, end } = period;
-				let startDate = _.max([this.dateCreate(start), this.dateCreate(this.calc_period.start)]);
-				let endDate = _.min([this.dateCreate(end), this.dateCreate(this.calc_period.end)]);
+				let startDate = _.max([this.dateCreate(start), this.dateCreate(this.calcPeriod.start)]);
+				let endDate = _.min([this.dateCreate(end), this.dateCreate(this.calcPeriod.end)]);
 				let monthYear = this.dateCreate(start).format('MM.YYYY');
 				notWorkingDates[monthYear] = notWorkingDates[monthYear] ?? {};
 				while (startDate <= endDate) {
@@ -661,11 +674,11 @@ const App = {
 			return result;
 		},
 		resultMonths() {
-			let startPeriodDate = this.dateCreate(this.calc_period.start);
+			let startPeriodDate = this.dateCreate(this.calcPeriod.start);
 			if (this.isValidDate(this.employmentDate)) {
 				startPeriodDate = _.max([startPeriodDate, this.dateCreate(this.employmentDate)]);
 			}
-			let endPeriodDate = this.dateCreate(this.calc_period.end);
+			let endPeriodDate = this.dateCreate(this.calcPeriod.end);
 			let currentStartDate = startPeriodDate;
 			let currentEndDate = startPeriodDate.endOf('month');
 			let result = [];

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru" xmlns="http://www.w3.org/1999/html">
+<html lang="ru">
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport"
@@ -20,8 +20,8 @@
 <body>
 <div id="app" v-cloak>
 	<div class="app-columns">
-		<fieldset>
-			<legend><b>Период отпуска</b></legend>
+		<div class="box-with-header">
+			<div class="box-header"><b>Период отпуска</b></div>
 			<small>Указать дату начала отпуска и его продолжительность в днях</small>
 			Начало: <input type="text" v-model="vacation_start"/>
 			Кол-во дней: <input type="text" v-model="vacation_length"/>
@@ -29,21 +29,24 @@
 			<div v-if="getHolidaysCount()">
 
 			</div>
-		</fieldset>
-		<fieldset>
-			<legend><b>Дата приема на работу</b></legend>
+		</div>
+		<div class="box-with-header">
+			<div class="box-header"><b>Дата приема на работу</b></div>
 			Дата: <input type="text" v-model="employmentDate"/>
-		</fieldset>
-		<fieldset>
-			<legend><b>Расчетный период</b></legend>
-			Начало: <input type="text" v-model="calc_period.start"/>
-			Конец: <input type="text" v-model="calc_period.end"/>
+		</div>
+		<div class="box-with-header">
+			<div class="box-header"><b>Расчетный период</b></div>
+			Начало: <input type="text" v-model="calcPeriod.start"/>
+			Конец: <input type="text" v-model="calcPeriod.end"/>
 			<div v-for="error in calcPeriodErrors" class="red-color">
 				{{error}}
 			</div>
-		</fieldset>
-		<fieldset>
-			<legend>Исключения из периода: <b>отпуск</b></legend>
+		</div>
+		<div>
+			<button @click="clearAllExclusions">Очистить все исключения</button>
+		</div>
+		<div class="box-with-header">
+			<div class="box-header">Исключения из периода: <b>отпуск</b></div>
 			<small>Учитываются праздники при подсчете продолжительности указанного периода</small>
 			<div v-for="(period, idx) in enhancedVacations">
 				Начало: <input :value="period.start"
@@ -67,13 +70,13 @@
 					{{error}}
 				</div>
 			</div>
-			<button type="button" @click="addVacationPeriod()" style="margin: 10px 0" class="no-print">
+			<button type="button" @click="addVacationPeriod()" class="no-print">
 				Добавить период
 			</button>
-		</fieldset>
+		</div>
 
-		<fieldset>
-			<legend>Исключения из периода: <b>продление отпуска</b></legend>
+		<div class="box-with-header">
+			<div class="box-header">Исключения из периода: <b>продление отпуска</b></div>
 			<small>Учитываются праздники при подсчете продолжительности указанного периода</small>
 			<div v-for="(period, idx) in enhancedProlongations">
 				Начало: <input :value="period.start"
@@ -96,14 +99,13 @@
 					class="no-print"
 					type="button"
 					@click="addVacationProlongationPeriod()"
-					style="margin: 10px 0"
 			>
 				Добавить период
 			</button>
-		</fieldset>
+		</div>
 
-		<fieldset>
-			<legend>Исключения из периода: <b>больничный лист</b></legend>
+		<div class="box-with-header">
+			<div class="box-header">Исключения из периода: <b>больничный лист</b></div>
 			<small><b>НЕ</b> учитываются праздники при подсчете продолжительности указанного периода</small>
 			<div v-for="(period, idx) in sickPeriods">
 				Начало: <input :value="period.start"
@@ -122,12 +124,12 @@
 					{{error}}
 				</div>
 			</div>
-			<button type="button" @click="addSickPeriod()" style="margin: 10px 0" class="no-print">
+			<button type="button" @click="addSickPeriod()" class="no-print">
 				Добавить период
 			</button>
-		</fieldset>
-		<fieldset>
-			<legend>Исключения из периода: <b>отпуск без сохранения ЗП</b></legend>
+		</div>
+		<div class="box-with-header">
+			<div class="box-header">Исключения из периода: <b>отпуск без сохранения ЗП</b></div>
 			<small><b>НЕ</b> учитываются праздники при подсчете продолжительности указанного периода</small>
 			<div v-for="(period, idx) in leaveOfAbsencePeriods">
 				Начало: <input :value="period.start"
@@ -146,24 +148,24 @@
 					{{error}}
 				</div>
 			</div>
-			<button type="button" @click="addLeaveOfAbsencePeriod()" style="margin: 10px 0" class="no-print">
+			<button type="button" @click="addLeaveOfAbsencePeriod()" class="no-print">
 				Добавить период
 			</button>
-		</fieldset>
+		</div>
 
-		<fieldset>
-			<legend><b>Средний дневной заработок</b></legend>
-			<input type="text" v-model="workerSum"/>
-		</fieldset>
+		<div class="box-with-header">
+			<div class="box-header"><b>Средний дневной заработок</b></div>
+			<input type="text" @input="workerSumChangedHandler" :value="workerSum"/>
+		</div>
 	</div>
 	<div class="app-columns">
-		<fieldset v-if="errors.length" class="error-fieldset">
-			<legend><b>Ошибки</b></legend>
+		<div v-if="errors.length" class="box-with-header error-fieldset">
+			<div class="box-header"><b>Ошибки</b></div>
 			<div v-for="error in errors">{{error}}</div>
-		</fieldset>
+		</div>
 
-		<fieldset>
-			<legend><b>Расчетная таблица</b></legend>
+		<div class="box-with-header">
+			<div class="box-header"><b>Расчетная таблица</b></div>
 			<table class="result-table">
 				<tr>
 					<th>Месяц.Год</th>
@@ -176,25 +178,26 @@
 					<td>{{row.workDays}}</td>
 				</tr>
 			</table>
-		</fieldset>
+		</div>
 
-		<fieldset>
-			<legend>Расчеты</legend>
+		<div class="box-with-header">
+			<div class="box-header"><b>Расчеты</b></div>
 			<div>
-				<fieldset>
+				<div class="box-with-header">
 					Средний дневной заработок - <b>{{avgSum.toFixed(2)}}</b> руб.
-				</fieldset>
-				<fieldset>
+				</div>
+				<div class="box-with-header">
 					Отработано дней в периоде - <b>{{totalWorkingDays.toFixed(2)}}</b>
-				<fieldset>
+				</div>
+				<div class="box-with-header">
 					Сумма отпускных - {{(avgSum * vacation_length).toFixed(2)}} ({{vacation_length}} &times; {{avgSum}})
-				</fieldset>
-				<fieldset>
+				</div>
+				<div class="box-with-header">
 					НДФЛ - {{(avgSum * vacation_length * 0.13).toFixed(2)}}
-				</fieldset>
-				<fieldset>
+				</div>
+				<div class="box-with-header">
 					На руки - {{(avgSum * vacation_length * 0.87).toFixed(2)}}
-				</fieldset>
+				</div>
 
 				<!--
 				<pre>{{JSON.stringify(this.splitByMonthPeriods, null, 2)}}</pre>
@@ -204,7 +207,7 @@
 				<pre>{{JSON.stringify(this.calcPeriods, null, 1)}}</pre>
 				-->
 			</div>
-		</fieldset>
+		</div>
 	</div>
 </div>
 <script src="js/app.js"></script>
