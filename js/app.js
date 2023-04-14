@@ -46,6 +46,7 @@ const App = {
 			this.recentVacationsPeriods = [];
 			this.sickPeriods = [];
 			this.leaveOfAbsencePeriods = [];
+			this.workerSum = '';
 		},
 		workerSumChangedHandler(e) {
 			this.workerSum = e.target.value.replace(/[\s]/, '');
