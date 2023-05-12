@@ -48,6 +48,16 @@ const App = {
 			this.leaveOfAbsencePeriods = [];
 			this.workerSum = '';
 		},
+		getDatesInPeriod(start, end) {
+			let startDate = this.dateCreate(start);
+			let endDate = this.dateCreate(end);
+			let result = {};
+			while (startDate <= endDate) {
+				result[startDate.format(this.date_format)] = 1;
+				startDate = startDate.add(1, 'day');
+			}
+			return Object.keys(result);
+		},
 		workerSumChangedHandler(e) {
 			this.workerSum = e.target.value.replace(/[\s]/, '');
 		},
@@ -91,14 +101,20 @@ const App = {
 			let monthDay = this.dateCreate(date).format('MMDD');
 			return this.holidays.some(holidayDate => this.dateCreate(holidayDate).format('MMDD') === monthDay);
 		},
+		/**
+		 * Из переданных дат удаляем праздники
+		 * @param {string[]} dates
+		 *
+		 * @return string[]
+		 */
+		excludeHolidays(dates) {
+			return dates.filter(date => !this.isHoliday(date));
+		},
 		getHolidaysCount(periodStart, periodEnd) {
-			let startDate = this.dateCreate(periodStart).format('MMDD');
-			let endDate = this.dateCreate(periodEnd).format('MMDD');
-			let periodHolidays = this.holidays.filter(date => {
-				let currentDate = this.dateCreate(date).format('MMDD');
-				return (currentDate >= startDate && currentDate <= endDate);
-			})
-			return periodHolidays.length;
+			let dayMonthArray = this.getDatesInPeriod(periodStart, periodEnd).map(d => d.slice(0, 5));
+			let holidaysDayMonth =  this.holidays.map(d => d.slice(0, 5));
+			let holidays = _.intersection(dayMonthArray, holidaysDayMonth);
+			return holidays.length;
 		},
 		datePlaceholderSelectPart(e) {
 			if (e.target.selectionStart !== e.target.selectionEnd) {
@@ -233,7 +249,7 @@ const App = {
 			return sickPeriods;
 		},
 		enhancePeriods(periods) {
-			let vacationsWithSick = periods.map(modifyPeriod => {
+			let enhancedPeriods = periods.map(modifyPeriod => {
 				if (!modifyPeriod.start || !modifyPeriod.end
 					|| !this.isValidDate(modifyPeriod.start) || !this.isValidDate(modifyPeriod.end)) {
 					return {
@@ -258,19 +274,27 @@ const App = {
 				// есть ли продление отпуска
 				let hasProlongation = this.hasProlongationStartOnDate(prolongationStartDate);
 				let holidaysCount = this.getHolidaysCount(modifyPeriod.start, vacationEnd);
+				let outsideCalcPeriodDaysCount = this.getOutsideDaysCount(modifyPeriod);
 
 				return {
 					...modifyPeriod,
 					sickPeriods,
 					hasProlongation,
 					end: vacationEnd,
-					length: vacationLength - holidaysCount,
+					length: vacationLength - holidaysCount - outsideCalcPeriodDaysCount,
 					holidaysCount,
 				}
 
 			});
-			console.log({ vacationsWithSick })
-			return vacationsWithSick;
+			return enhancedPeriods;
+		},
+		getOutsideDaysCount({ start, end }) {
+			let periodDates = this.getDatesInPeriod(start, end);
+			let inPeriodDates = periodDates.filter(date => {
+				return this.dateCreate(date) >= this.dateCreate(this.calcPeriod.start)
+					&& this.dateCreate(date) <= this.dateCreate(this.calcPeriod.end);
+			});
+			return periodDates.length - inPeriodDates.length;
 		},
 		splitPeriodByMonth(period) {
 			const periodStart = this.dateCreate(period.start);
@@ -297,6 +321,10 @@ const App = {
 			this.test2();
 			this.test3();
 			this.test4();
+			this.test5();
+			this.test6();
+			this.test7();
+			this.test8();
 			restoreState();
 		},
 		test1() {
@@ -428,6 +456,80 @@ const App = {
 					}, null, 2));
 				}
 			});
+		},
+		test5() {
+			this.vacation_start = '24.04.2023';
+			this.vacation_length = '14';
+			this.employmentDate = '01.01.2020';
+			this.calcPeriod.start = '01.04.2022';
+			this.calcPeriod.end = '31.03.2023';
+			this.recentVacationsPeriods = [
+				{
+					start: '01.05.2022',
+					end: '16.05.2022'
+				},
+			];
+			this.vacationProlongationPeriods = [];
+			this.sickPeriods = [];
+			this.resultTable.forEach(row => {
+				if (row.monthYear === '05.2022') {
+					this.assertEqual('16.07', row.workDays, 'Test5 не пройден');
+				}
+			})
+		},
+		test6() {
+			this.vacation_start = '24.04.2023';
+			this.vacation_length = '14';
+			this.employmentDate = '01.01.2020';
+			this.calcPeriod.start = '01.04.2022';
+			this.calcPeriod.end = '31.03.2023';
+			this.recentVacationsPeriods = [
+				{
+					start: '29.12.2022',
+					end: '17.01.2023'
+				},
+			];
+			this.vacationProlongationPeriods = [];
+			this.sickPeriods = [];
+			let holidaysCount = Object.values(this.enhancedVacations)[0].holidaysCount;
+			this.assertEqual(8, holidaysCount, 'Test6 не пройден')
+		},
+		test7() {
+			this.vacation_start = '10.04.2023';
+			this.vacation_length = '14';
+			this.employmentDate = '01.01.2020';
+			this.calcPeriod.start = '01.04.2022';
+			this.calcPeriod.end = '31.03.2023';
+			this.recentVacationsPeriods = [];
+			this.vacationProlongationPeriods = [];
+			this.sickPeriods = [
+				{start: '15.05.2022', end: '05.08.2022'}
+			];
+			this.resultTable.forEach(row => {
+				if (row.monthYear === '06.2022') {
+					this.assertEqual('0.00', row.workDays, 'Test7 не пройден');
+				}
+				if (row.monthYear === '07.2022') {
+					this.assertEqual('0.00', row.workDays, 'Test7 не пройден');
+				}
+			})
+		},
+		test8() {
+			this.vacation_start = '01.04.2023';
+			this.vacation_length = '14';
+			this.employmentDate = '01.01.2020';
+			this.calcPeriod.start = '01.04.2022';
+			this.calcPeriod.end = '31.03.2023';
+			this.recentVacationsPeriods = [
+				{start: '11.06.2022', end: '13.06.2022'}
+			];
+			this.vacationProlongationPeriods = [];
+			this.sickPeriods = [];
+			this.resultTable.forEach(row => {
+				if (row.monthYear === '06.2022') {
+					this.assertEqual('27.35', row.workDays, 'Test8 не пройден');
+				}
+			})
 		},
 		assertEqual(expected, real, message) {
 			if (expected === real) {
@@ -635,16 +737,16 @@ const App = {
 			return errors;
 		},
 		splitByMonthPeriods() {
-			let result = [];
-			const allPeriods = [
-				this.enhancedProlongations,
-				this.enhancedVacations,
-				this.sickPeriods,
-				this.leaveOfAbsencePeriods,
-			];
-			allPeriods.forEach(periods => {
+			let result = {};
+			const allPeriods = {
+				[this.types.vacation_prolongation]: this.enhancedProlongations,
+				[this.types.vacation]: this.enhancedVacations,
+				[this.types.sick]: this.sickPeriods,
+				[this.types.leave_of_absence]: this.leaveOfAbsencePeriods,
+			};
+			Object.entries(allPeriods).forEach(([type, periods]) => {
 				Object.values(periods).forEach(period => {
-					result.push(...this.splitPeriodByMonth(period));
+					_.update(result, [type], ((p = []) => p.push(...this.splitPeriodByMonth(period))))
 				});
 			});
 			return result;
@@ -653,24 +755,45 @@ const App = {
 			return this.splitPeriodsByMonth(this.sickPeriods);
 		},
 		notWorkingDates() {
+			const allPeriods = {
+				[this.types.vacation_prolongation]: this.enhancedProlongations,
+				[this.types.vacation]: this.enhancedVacations,
+				[this.types.sick]: this.sickPeriods,
+				[this.types.leave_of_absence]: this.leaveOfAbsencePeriods,
+			};
 			let notWorkingDates = {};
-			this.splitByMonthPeriods.forEach(period => {
-				let { start, end } = period;
-				let startDate = _.max([this.dateCreate(start), this.dateCreate(this.calcPeriod.start)]);
-				let endDate = _.min([this.dateCreate(end), this.dateCreate(this.calcPeriod.end)]);
-				let monthYear = this.dateCreate(start).format('MM.YYYY');
-				notWorkingDates[monthYear] = notWorkingDates[monthYear] ?? {};
-				while (startDate <= endDate) {
-					notWorkingDates[monthYear][startDate.format(this.date_format)] = 1;
-					startDate = startDate.add(1, 'day');
-				}
+			Object.entries(allPeriods).forEach(([type, periods]) => {
+				periods.forEach(period => {
+					let { start, end } = period;
+					let datesInPeriod = this.getDatesInPeriod(start, end);
+					datesInPeriod.forEach(date => {
+						// если дата выходит за пределы периода - не обрабатываем ее никак
+						if (
+							this.dateCreate(date) < this.dateCreate(this.calcPeriod.start)
+							|| this.dateCreate(date) > this.dateCreate(this.calcPeriod.end)
+						) {
+							return;
+						}
+						const needToExcludeHolidays = [this.types.vacation, this.types.vacation_prolongation].includes(type);
+						// если в отпуск или продление отпуска попали праздничные дни (8 марта, 9 мая, ...)
+						// то эти дни считаются рабочими: убираем их из отпуска
+						if (needToExcludeHolidays && this.isHoliday(date)) {
+							return;
+						}
+						let monthYear = this.dateCreate(date).format('MM.YYYY');
+						_.update(notWorkingDates, [monthYear], (dates = []) => {
+							dates.push(date);
+							return _.uniq(dates);
+						})
+					});
+				});
 			});
 			return notWorkingDates;
 		},
 		notWorkingDaysCount() {
 			let result = {};
 			Object.entries(this.notWorkingDates).forEach(([monthYear, dates]) => {
-				result[monthYear] = Object.keys(dates).length;
+				result[monthYear] = dates.length;
 			});
 			return result;
 		},
