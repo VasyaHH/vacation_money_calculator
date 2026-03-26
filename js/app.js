@@ -798,6 +798,9 @@ const App = {
 			return result;
 		},
 		resultMonths() {
+			if (this.calcPeriodErrors.length) {
+				return [];
+			}
 			let startPeriodDate = this.dateCreate(this.calcPeriod.start);
 			if (this.isValidDate(this.employmentDate)) {
 				startPeriodDate = _.max([startPeriodDate, this.dateCreate(this.employmentDate)]);
@@ -843,4 +846,34 @@ const App = {
 
 const app = Vue.createApp(App);
 app.config.globalProperties.dayjs = dayjs;
-app.mount('#app')
+
+// Собственная обёртка autour v-maska для поддержки строк
+app.directive('maska', {
+    mounted(el, binding) {
+        const maskValue = binding.value;
+        const options = typeof maskValue === 'string'
+            ? { mask: maskValue }  // без eager - маска применяется при blur
+            : maskValue;
+        if (!el._maskaInstance) {
+            el._maskaInstance = new Maska.MaskInput(el, options);
+        }
+    },
+    updated(el, binding) {
+        if (el._maskaInstance) {
+            el._maskaInstance.destroy();
+        }
+        const maskValue = binding.value;
+        const options = typeof maskValue === 'string'
+            ? { mask: maskValue }
+            : maskValue;
+        el._maskaInstance = new Maska.MaskInput(el, options);
+    },
+    unmounted(el) {
+        if (el._maskaInstance) {
+            el._maskaInstance.destroy();
+            delete el._maskaInstance;
+        }
+    }
+});
+
+app.mount('#app');

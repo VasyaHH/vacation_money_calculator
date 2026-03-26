@@ -1,0 +1,60 @@
+name: Deploy Multi Artifact (master root + dev/dev)
+on:
+  push:
+    branches: [master, dev]
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout all branches
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Загружаем историю для git checkout
+
+    - name: Create Multi Structure
+      run: |
+        mkdir -p deploy
+        
+        echo "=== Master to root ==="
+        git checkout master
+        rsync -av --exclude='.git*' --exclude='.github' --exclude='deploy' . deploy/ || true
+        ls -la deploy/
+        
+        echo "=== Dev to /dev ==="
+        git checkout dev || echo "Dev branch not found, skip"
+        mkdir -p deploy/dev
+        rsync -av --exclude='.git*' --exclude='.github' --exclude='deploy' . deploy/dev/ || true
+        ls -la deploy/dev/
+        
+        # Гарантируем index.html в root
+        if [ ! -f deploy/index.html ]; then
+          echo "<h1>Main site (master branch)</h1><p><a href='/dev/'>Dev version</a></p>" > deploy/index.html
+          echo "Root index.html created automatically"
+        fi
+        
+        # Финальная структура
+        echo "=== Final deploy/ ==="
+        ls -la deploy/
+        find deploy/ -name index.html
+
+    - name: Setup Pages
+      uses: actions/configure-pages@v5
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: deploy/
+
+    - name: Deploy to Pages
+      id: deployment
+      uses: actions/deploy-pages@v4

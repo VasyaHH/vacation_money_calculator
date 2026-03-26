@@ -15,6 +15,7 @@
 	</script>
 
 	<script src="js/static/vue.global.js"></script>
+	<script src="js/static/maska.umd.js"></script>
 </head>
 
 <body>
@@ -23,8 +24,8 @@
 		<div class="box-with-header">
 			<div class="box-header"><b>Период отпуска</b></div>
 			<small>Указать дату начала отпуска и его продолжительность в днях</small>
-			Начало: <input type="text" v-model="vacation_start"/>
-			Кол-во дней: <input type="text" v-model="vacation_length"/>
+			Начало: <input type="text" v-model="vacation_start" v-maska="'##.##.####'" inputmode="numeric" pattern="[0-9]*">
+			Кол-во дней: <input type="text" inputmode="numeric" v-model="vacation_length"/>
 			Конец: <span>{{vacationEnd}}</span>
 			<div v-if="getHolidaysCount()">
 
@@ -32,12 +33,12 @@
 		</div>
 		<div class="box-with-header">
 			<div class="box-header"><b>Дата приема на работу</b></div>
-			Дата: <input type="text" v-model="employmentDate"/>
+			Дата: <input type="text" v-model="employmentDate" v-maska="'##.##.####'" inputmode="numeric" pattern="[0-9]*">
 		</div>
 		<div class="box-with-header">
 			<div class="box-header"><b>Расчетный период</b></div>
-			Начало: <input type="text" v-model="calcPeriod.start"/>
-			Конец: <input type="text" v-model="calcPeriod.end"/>
+			Начало: <input type="text" v-model="calcPeriod.start" v-maska="'##.##.####'" inputmode="numeric" pattern="[0-9]*">
+			Конец: <input type="text" v-model="calcPeriod.end" v-maska="'##.##.####'" inputmode="numeric" pattern="[0-9]*">
 			<div v-for="error in calcPeriodErrors" class="red-color">
 				{{error}}
 			</div>
@@ -53,11 +54,16 @@
 							   @input="datePlaceholderChangeHandler($event, types.vacation, idx, 'start')"
 							   ref="recentVacationInput"
 							   :class="{'date-invalid': period.start && !isValidDate(period.start)}"
-			/>
+							   v-maska="'##.##.####'"
+							   inputmode="numeric"
+							   pattern="[0-9]*">
 				Конец: <input :value="period.end"
 							  @input="datePlaceholderChangeHandler($event, types.vacation, idx, 'end')"
 							  :class="{'date-invalid': period.end && !isValidDate(period.end)}"
-							  @keydown.enter="addVacationPeriodRow()"/>
+							  @keydown.enter="addVacationPeriodRow()"
+							  v-maska="'##.##.####'"
+							  inputmode="numeric"
+							  pattern="[0-9]*">
 				Дней: <span v-if="isValidDate(period.start) && isValidDate(period.end)">
 							{{period.length}}
 							<span v-for="p in period.sickPeriods"> (БЛ: {{p.start}} - {{p.end}})</span>
@@ -83,11 +89,16 @@
 							   @input="datePlaceholderChangeHandler($event, types.vacation_prolongation, idx, 'start')"
 							   ref="vacationProlongationInput"
 							   :class="{'date-invalid': period.start && !isValidDate(period.start)}"
-			/>
+							   v-maska="'##.##.####'"
+							   inputmode="numeric"
+							   pattern="[0-9]*">
 				Конец: <input :value="period.end"
 							  @input="datePlaceholderChangeHandler($event, types.vacation_prolongation, idx, 'end')"
 							  :class="{'date-invalid': period.end && !isValidDate(period.end)}"
-							  @keydown.enter="addVacationProlongationPeriod()"/>
+							  @keydown.enter="addVacationProlongationPeriod()"
+							  v-maska="'##.##.####'"
+							  inputmode="numeric"
+							  pattern="[0-9]*">
 				Дней:	<span v-if="isValidDate(period.start) && isValidDate(period.end)">
 							{{period.length}}
 						</span>
@@ -112,11 +123,16 @@
 							   @input="datePlaceholderChangeHandler($event, types.sick, idx, 'start')"
 							   ref="sickPeriodInput"
 							   :class="{'date-invalid': period.start && !isValidDate(period.start)}"
-			/>
+							   v-maska="'##.##.####'"
+							   inputmode="numeric"
+							   pattern="[0-9]*">
 				Конец: <input :value="period.end"
 							  @input="datePlaceholderChangeHandler($event, types.sick, idx, 'end')"
 							  :class="{'date-invalid': period.end && !isValidDate(period.end)}"
-							  @keydown.enter="addSickPeriod()"/>
+							  @keydown.enter="addSickPeriod()"
+							  v-maska="'##.##.####'"
+							  inputmode="numeric"
+							  pattern="[0-9]*">
 				Дней: <span v-if="isValidDate(period.start) && isValidDate(period.end)">
 							{{daysBetweenDatesInclusive(period.start, period.end)}}
 					  </span>
@@ -136,11 +152,16 @@
 							   @input="datePlaceholderChangeHandler($event, types.leave_of_absence, idx, 'start')"
 							   ref="leaveOfAbsenceInput"
 							   :class="{'date-invalid': period.start && !isValidDate(period.start)}"
-			/>
+							   v-maska="'##.##.####'"
+							   inputmode="numeric"
+							   pattern="[0-9]*">
 				Конец: <input :value="period.end"
 							  @input="datePlaceholderChangeHandler($event, types.leave_of_absence, idx, 'end')"
 							  :class="{'date-invalid': period.end && !isValidDate(period.end)}"
-							  @keydown.enter="addLeaveOfAbsencePeriod()"/>
+							  @keydown.enter="addLeaveOfAbsencePeriod()"
+							  v-maska="'##.##.####'"
+							  inputmode="numeric"
+							  pattern="[0-9]*">
 				Дней: <span v-if="isValidDate(period.start) && isValidDate(period.end)">
 							{{daysBetweenDatesInclusive(period.start, period.end)}}
 					  </span>
@@ -155,7 +176,7 @@
 
 		<div class="box-with-header">
 			<div class="box-header"><b>Средний дневной заработок</b></div>
-			<input type="text" @input="workerSumChangedHandler" :value="workerSum"/>
+			<input type="text" @input="workerSumChangedHandler" :value="workerSum" inputmode="numeric" pattern="[0-9]*">
 		</div>
 	</div>
 	<div class="app-columns">
