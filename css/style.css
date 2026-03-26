@@ -1,5 +1,5 @@
 body {
-    background-color: #e5f5f5;
+    background-color: #f3f4f6;
     background: url("../img/bg.jpg") no-repeat fixed;
     background-size: cover;
 }
@@ -8,28 +8,45 @@ body * {
 }
 input {
     font-size: 1em;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #374151;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    min-height: 28px;
 }
+
+input:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
 .box-with-header {
-    padding: 5px;
-    box-shadow: 0 0 10px -7px #4f00ff;
-    border: 1px solid lightblue;
-    border-radius: 3px;
-    background-color: #dce7fc;
+    padding: 16px;
+    background: #eef2ff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid #e0e7ff;
 }
 .box-header {
     text-transform: uppercase;
     line-height: 1em;
+    font-weight: 600;
+    color: #4f46e5;
+    margin-bottom: 3px;
 }
 
 .error-fieldset {
-    background-color: #ff9c9c;
+    background-color: #fef2f2;
+    border-color: #fecaca !important;
 }
 
 small {
     display: block;
-    padding-bottom: 10px;
     font-style: italic;
-    color: #aaa;
+    color: #6b7280;
+    margin-bottom: 8px;
 }
 [v-cloak]{
     display: none;
@@ -42,13 +59,12 @@ small {
     gap: 10px;
 }
 .app-columns {
-    background-color: #fff8;
-    box-shadow: 0 0 9px 9px #fff8;
-    width: 800px;
+    background: transparent;
+    width: 450px;
     max-width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 16px;
 }
 input.date-invalid {
     border: 1px solid red;
@@ -69,6 +85,108 @@ input.date-invalid {
 }
 tr.not-full-month td {
     background-color: bisque;
+    font-weight: bold;
+}
+
+/* Universal form grid for responsive layout - table-like layout */
+.form-grid {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 8px 10px;
+    align-items: center;
+}
+
+.form-grid > label {
+    justify-self: end;
+    font-size: 0.9em;
+    font-weight: 500;
+    color: #4b5563;
+    padding-right: 8px;
+}
+
+.form-grid > input,
+.form-grid > span {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* For elements that should span both columns (errors, etc.) */
+.form-grid .full-width {
+    grid-column: 1 / -1;
+    justify-self: start;
+}
+
+/* Styles for dynamic period cards */
+.form-grid.dynamic-period {
+    background: #ffffff;
+    border: 1px solid #c7d2fe;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(79, 70, 229, 0.08);
+    transition: all 0.2s ease;
+}
+
+.form-grid.dynamic-period:hover {
+    box-shadow: 0 3px 8px rgba(79, 70, 229, 0.12);
+    border-color: #a5b4fc;
+}
+
+.form-grid.dynamic-period:last-child {
+    margin-bottom: 0;
+}
+
+/* Modern button styles */
+button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    background: #4f46e5;
+    color: white;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(79, 70, 229, 0.2);
+    min-height: 32px;
+}
+
+button:hover {
+    background: #4338ca;
+    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
+    transform: translateY(-1px);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* Enhanced error styling */
+.red-color {
+    color: #dc2626;
+    background: #fef2f2;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #fecaca;
+    margin-top: 4px;
+}
+
+/* Table styling */
+.result-table th,
+.result-table td {
+    border: 1px solid #e5e7eb;
+    padding: 10px;
+    background: #ffffff;
+}
+
+.result-table th {
+    background: #f9fafb;
+    font-weight: 600;
+    color: #374151;
+}
+
+tr.not-full-month td {
+    background-color: #fef3c7;
     font-weight: bold;
 }
 @media print
