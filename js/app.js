@@ -51,6 +51,12 @@ const App = {
 		getDatesInPeriod(start, end) {
 			let startDate = this.dateCreate(start);
 			let endDate = this.dateCreate(end);
+
+			// Проверяем валидность дат
+			if (!startDate.isValid() || !endDate.isValid()) {
+				return [];
+			}
+
 			let result = {};
 			while (startDate <= endDate) {
 				result[startDate.format(this.date_format)] = 1;
