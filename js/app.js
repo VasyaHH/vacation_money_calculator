@@ -52,8 +52,14 @@ const App = {
 			let startDate = this.dateCreate(start);
 			let endDate = this.dateCreate(end);
 
-			// Проверяем валидность дат
+			// Быстрая проверка на валидность
 			if (!startDate.isValid() || !endDate.isValid()) {
+				return [];
+			}
+
+			// Защита от слишком длинных периодов (5 лет = 1825 дней)
+			const daysDiff = endDate.diff(startDate, 'day');
+			if (daysDiff > 1825) {
 				return [];
 			}
 
@@ -80,25 +86,25 @@ const App = {
 			});
 		},
 		addVacationPeriod() {
-			this.recentVacationsPeriods.push({ start: '', end: '', type: this.types.vacation });
+			this.recentVacationsPeriods.push({ start: '', end: '', type: this.types.vacation, originIndex: this.recentVacationsPeriods.length });
 			this.$nextTick(() => {
 				this.$refs.recentVacationInput[this.recentVacationsPeriods.length - 1].focus();
 			})
 		},
 		addSickPeriod() {
-			this.sickPeriods.push({ start: '', end: '', type: this.types.sick })
+			this.sickPeriods.push({ start: '', end: '', type: this.types.sick, originIndex: this.sickPeriods.length });
 			this.$nextTick(() => {
 				this.$refs.sickPeriodInput[this.sickPeriods.length - 1].focus();
 			})
 		},
 		addLeaveOfAbsencePeriod() {
-			this.leaveOfAbsencePeriods.push({ start: '', end: '', type: this.types.leave_of_absence })
+			this.leaveOfAbsencePeriods.push({ start: '', end: '', type: this.types.leave_of_absence, originIndex: this.leaveOfAbsencePeriods.length });
 			this.$nextTick(() => {
 				this.$refs.leaveOfAbsenceInput[this.leaveOfAbsencePeriods.length - 1].focus();
 			})
 		},
 		addVacationProlongationPeriod() {
-			this.vacationProlongationPeriods.push({ start: '', end: '', type: this.types.vacation_prolongation });
+			this.vacationProlongationPeriods.push({ start: '', end: '', type: this.types.vacation_prolongation, originIndex: this.vacationProlongationPeriods.length });
 			this.$nextTick(() => {
 				this.$refs.vacationProlongationInput[this.vacationProlongationPeriods.length - 1].focus();
 			})
@@ -254,12 +260,14 @@ const App = {
 			});
 			return sickPeriods;
 		},
-		enhancePeriods(periods) {
-			let enhancedPeriods = periods.map(modifyPeriod => {
+		enhancePeriods(periods, type) {
+			let enhancedPeriods = periods.map((modifyPeriod, idx) => {
 				if (!modifyPeriod.start || !modifyPeriod.end
 					|| !this.isValidDate(modifyPeriod.start) || !this.isValidDate(modifyPeriod.end)) {
 					return {
 						...modifyPeriod,
+						originIndex: idx,
+						type: type,
 						sickPeriods: [],
 						length: 0,
 						holidaysCount: 0,
@@ -284,6 +292,8 @@ const App = {
 
 				return {
 					...modifyPeriod,
+					originIndex: idx,
+					type: type,
 					sickPeriods,
 					hasProlongation,
 					end: vacationEnd,
@@ -568,6 +578,42 @@ const App = {
 				this.calcPeriod.start = calcPeriodStart;
 				this.calcPeriod.end = calcPeriodEnd;
 			}
+		},
+		validatePeriod(period) {
+			let errors = [];
+
+			if (!period.start || !period.end) {
+				return errors;
+			}
+
+			const startDate = this.dateCreate(period.start);
+			const endDate = this.dateCreate(period.end);
+
+			if (!startDate.isValid()) {
+				errors.push('Неправильная дата начала периода');
+				return errors;
+			}
+			if (!endDate.isValid()) {
+				errors.push('Неправильная дата окончания периода');
+				return errors;
+			}
+			if (endDate.diff(startDate, 'd') < 0) {
+				errors.push('Начало периода больше, чем его окончание');
+			}
+			if (startDate < this.dateCreate(this.calcPeriod.start)) {
+				errors.push('Начало периода выходит за левую границу расчетного периода');
+			}
+			if (endDate < this.dateCreate(this.calcPeriod.start)) {
+				errors.push('Начало периода выходит за правую границу расчетного периода');
+			}
+			// Проверка на превышение 5 лет
+			const daysDiff = endDate.diff(startDate, 'day');
+			const yearsDiff = daysDiff / 365.25;
+			if (yearsDiff > 5) {
+				errors.push('Период превышает 5 лет');
+			}
+
+			return errors;
 		}
 	},
 	mounted: function () {
@@ -637,41 +683,59 @@ const App = {
 			return errors;
 		},
 		enhancedVacations() {
-			return this.enhancePeriods(this.recentVacationsPeriods);
+			return this.enhancePeriods(this.recentVacationsPeriods, this.types.vacation);
 		},
 		enhancedProlongations() {
-			return this.enhancePeriods(this.vacationProlongationPeriods);
+			return this.enhancePeriods(this.vacationProlongationPeriods, this.types.vacation_prolongation);
 		},
-		excludedPeriodsDayjs() {
-			return [];
-			return this.excludedPeriodsWithIndex.map(period => ({
-				...period,
-				start: period.start ? this.dateCreate(period.start) : null,
-				end: period.end ? this.dateCreate(period.end) : null,
-			}));
+		allExcludedPeriods() {
+			const allPeriods = [];
+
+			// Отпуск
+			this.recentVacationsPeriods.forEach((period, idx) => {
+				allPeriods.push({
+					...period,
+					originIndex: idx,
+					type: this.types.vacation
+				});
+			});
+
+			// Продление отпуска
+			this.vacationProlongationPeriods.forEach((period, idx) => {
+				allPeriods.push({
+					...period,
+					originIndex: idx,
+					type: this.types.vacation_prolongation
+				});
+			});
+
+			// Больничный
+			this.sickPeriods.forEach((period, idx) => {
+				allPeriods.push({
+					...period,
+					originIndex: idx,
+					type: this.types.sick
+				});
+			});
+
+			// Отпуск без сохранения ЗП
+			this.leaveOfAbsencePeriods.forEach((period, idx) => {
+				allPeriods.push({
+					...period,
+					originIndex: idx,
+					type: this.types.leave_of_absence
+				});
+			});
+
+			return allPeriods;
 		},
-		excludedPeriodsErrors() {
-			return this.excludedPeriodsDayjs.map(({start, end}) => {
-				let errors = [];
-				if (start && !start.isValid()) {
-					errors.push('Неправильная дата начала периода');
-					return errors;
-				}
-				if (end && !end.isValid()) {
-					errors.push('Неправильная дата окончания периода');
-					return errors;
-				}
-				if (end && start && end.diff(start, 'd') < 0) {
-					errors.push('Начало периода больше, чем его окончание');
-				}
-				if (start && start < this.dateCreate(this.calcPeriod.start)) {
-					errors.push('Начало периода выходит за левую границу расчетного периода');
-				}
-				if (end && end < this.dateCreate(this.calcPeriod.start)) {
-					errors.push('Начало периода выходит за правую границу расчетного периода');
-				}
-				return errors;
-			})
+		periodErrors() {
+			const errors = {};
+			this.allExcludedPeriods.forEach(period => {
+				const key = `${period.type}-${period.originIndex}`;
+				errors[key] = this.validatePeriod(period);
+			});
+			return errors;
 		},
 		calcPeriodErrors() {
 			let { start, end } = this.calcPeriod

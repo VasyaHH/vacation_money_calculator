@@ -87,7 +87,7 @@
 				<div v-if="period.sickPeriods.length && !period.hasProlongation" class="full-width red-color">
 					Нет продления отпуска
 				</div>
-				<div v-for="error in excludedPeriodsErrors[period.originIndex]" class="full-width red-color">
+				<div v-for="error in periodErrors[period.type + '-' + period.originIndex]" class="full-width red-color">
 					{{error}}
 				</div>
 			</div>
@@ -120,7 +120,7 @@
 				<span v-if="isValidDate(period.start) && isValidDate(period.end)">
 					{{period.length}}
 				</span>
-				<div v-for="error in excludedPeriodsErrors[period.originIndex]" class="full-width red-color">
+				<div v-for="error in periodErrors[period.type + '-' + period.originIndex]" class="full-width red-color">
 					{{error}}
 				</div>
 			</div>
@@ -157,7 +157,7 @@
 				<span v-if="isValidDate(period.start) && isValidDate(period.end)">
 					{{daysBetweenDatesInclusive(period.start, period.end)}}
 				</span>
-				<div v-for="error in excludedPeriodsErrors[period.originIndex]" class="full-width red-color">
+				<div v-for="error in periodErrors[period.type + '-' + period.originIndex]" class="full-width red-color">
 					{{error}}
 				</div>
 			</div>
@@ -189,7 +189,7 @@
 				<span v-if="isValidDate(period.start) && isValidDate(period.end)">
 					{{daysBetweenDatesInclusive(period.start, period.end)}}
 				</span>
-				<div v-for="error in excludedPeriodsErrors[period.originIndex]" class="full-width red-color">
+				<div v-for="error in periodErrors[period.type + '-' + period.originIndex]" class="full-width red-color">
 					{{error}}
 				</div>
 			</div>
